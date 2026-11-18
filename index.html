@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14182b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="像素風海龜湯推理遊戲：用是非題找出故事真相。">
+<title>海龜湯 · 像素推理遊戲</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect x='2' y='1' width='4' height='1' fill='%230b2a2a'/%3E%3Crect x='1' y='2' width='6' height='2' fill='%233fa36b'/%3E%3Crect x='6' y='2' width='2' height='2' fill='%239be08a'/%3E%3Crect x='0' y='4' width='8' height='1' fill='%23f2c14e'/%3E%3Crect x='1' y='5' width='6' height='2' fill='%23e8705a'/%3E%3C/svg%3E">
+<style>
+@font-face{
+  font-family:"Cubic11";
+  src:url("https://cdn.jsdelivr.net/gh/ACh-K/Cubic-11@main/fonts/web/Cubic_11.woff2") format("woff2");
+  font-display:swap;
+}
+:root{
+  --bg:#14182b; --bg2:#1b2140; --panel:#232b4d; --panel2:#2c365e;
+  --ink:#f4ecd8; --dim:#9aa3c7; --k:#06080f;
+  --teal:#3fd0c9; --sand:#f2c14e; --coral:#e8705a; --green:#7fd38a; --red:#ff5d6c; --purple:#a98bf0;
+  --px:4px;
+  --font:"Cubic11","PingFang TC","Noto Sans TC","Microsoft JhengHei",monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:none;overscroll-behavior:none}
+body{
+  background:
+    radial-gradient(circle at 20% 10%, rgba(63,208,201,.10) 0 2px, transparent 3px) 0 0/48px 48px,
+    radial-gradient(circle at 70% 60%, rgba(242,193,78,.08) 0 2px, transparent 3px) 0 0/64px 64px,
+    linear-gradient(180deg,#14182b 0%,#101427 100%);
+}
+body::after{ /* CRT scanlines */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:999;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+#app{max-width:480px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.screen{display:none;flex:1;flex-direction:column;min-height:0;padding:16px;animation:fadeIn .25s steps(4)}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* pixel panel */
+.panel{
+  background:var(--panel);position:relative;padding:14px 16px;margin:8px 4px;
+  box-shadow:
+    0 calc(-1*var(--px)) 0 0 var(--k), 0 var(--px) 0 0 var(--k),
+    calc(-1*var(--px)) 0 0 0 var(--k), var(--px) 0 0 0 var(--k),
+    inset 0 var(--px) 0 0 rgba(255,255,255,.08), inset 0 calc(-1*var(--px)) 0 0 rgba(0,0,0,.25),
+    var(--px) calc(2*var(--px)) 0 0 rgba(0,0,0,.45);
+}
+.panel h3{margin:0 0 8px;font-size:15px;color:var(--sand);letter-spacing:1px}
+
+/* pixel button */
+.btn{
+  --c:var(--teal); --t:#0c1a24;
+  border:0;background:var(--c);color:var(--t);padding:12px 16px;margin:6px 4px;position:relative;
+  font-size:17px;letter-spacing:1px;text-align:center;display:block;width:calc(100% - 8px);
+  box-shadow:
+    0 calc(-1*var(--px)) 0 0 var(--k), 0 var(--px) 0 0 var(--k),
+    calc(-1*var(--px)) 0 0 0 var(--k), var(--px) 0 0 0 var(--k),
+    inset 0 calc(-1*var(--px)) 0 0 rgba(0,0,0,.28), inset 0 var(--px) 0 0 rgba(255,255,255,.35),
+    0 calc(2*var(--px)) 0 0 rgba(0,0,0,.45);
+  transition:transform .05s steps(1);
+}
+.btn:active{transform:translateY(var(--px));box-shadow:
+    0 calc(-1*var(--px)) 0 0 var(--k), 0 var(--px) 0 0 var(--k),
+    calc(-1*var(--px)) 0 0 0 var(--k), var(--px) 0 0 0 var(--k),
+    inset 0 var(--px) 0 0 rgba(0,0,0,.28)}
+.btn.sand{--c:var(--sand)} .btn.coral{--c:var(--coral);--t:#2a0d08} .btn.green{--c:var(--green)}
+.btn.purple{--c:var(--purple);--t:#160c2e} .btn.ghost{--c:var(--panel2);--t:var(--ink)}
+.btn.small{font-size:14px;padding:8px 10px;width:auto;display:inline-block}
+.btn:disabled{opacity:.45;filter:grayscale(.6)}
+
+.row{display:flex;gap:8px}
+.row>.btn{flex:1;width:auto}
+.muted{color:var(--dim)}
+.center{text-align:center}
+.tiny{font-size:13px}
+
+/* title screen */
+#title{justify-content:center;align-items:stretch;text-align:center}
+.logo-wrap{position:relative;margin:4px auto 6px;width:220px}
+#sprite{width:220px;height:176px;image-rendering:pixelated;display:block}
+#sprite .steam{animation:steam 1.2s steps(2) infinite}
+@keyframes steam{0%{transform:translateY(0);opacity:1}50%{transform:translateY(-1px);opacity:.6}100%{transform:translateY(0);opacity:1}}
+#sprite .head{animation:bob 1.6s steps(2) infinite}
+@keyframes bob{50%{transform:translateY(1px)}}
+.game-title{font-size:44px;line-height:1.1;margin:6px 0 2px;color:var(--sand);letter-spacing:6px;
+  text-shadow:4px 0 0 var(--k),-4px 0 0 var(--k),0 4px 0 var(--k),0 -4px 0 var(--k),4px 4px 0 var(--coral),8px 8px 0 var(--k)}
+.subtitle{color:var(--teal);font-size:14px;letter-spacing:3px;margin-bottom:14px}
+.blink{animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.stat-line{font-size:13px;color:var(--dim);margin:10px 0 0}
+.menu{margin:4px 16px}
+
+/* header */
+.topbar{display:flex;align-items:center;gap:8px;margin:0 4px 6px}
+.topbar .t{flex:1;font-size:18px;color:var(--sand);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.icon-btn{border:0;background:var(--panel2);width:40px;height:40px;font-size:18px;flex:none;
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k),inset 0 -3px 0 rgba(0,0,0,.3)}
+.icon-btn:active{transform:translateY(3px)}
+
+.scroll{overflow-y:auto;flex:1;min-height:0;padding:4px 4px 12px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{width:6px}.scroll::-webkit-scrollbar-thumb{background:var(--panel2)}
+
+/* rules */
+.rules p,.rules li{font-size:15px}
+.rules ol,.rules ul{padding-left:20px;margin:6px 0}
+.tag{display:inline-block;font-size:12px;padding:1px 6px;margin-right:4px;color:#0c1a24;background:var(--teal);vertical-align:middle}
+.tag.red{background:var(--coral);color:#2a0d08}
+.tag.clear{background:var(--teal)}
+.ans{display:inline-block;min-width:52px;text-align:center;font-size:13px;padding:0 6px;color:#0c1a24}
+.ans.y{background:var(--green)} .ans.n{background:var(--red);color:#2a0008} .ans.i{background:var(--dim)}
+
+/* select */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.card{border:0;text-align:left;background:var(--panel);padding:12px 12px 10px;margin:6px;position:relative;min-height:112px;display:flex;flex-direction:column;
+  box-shadow:0 -4px 0 0 var(--k),0 4px 0 0 var(--k),-4px 0 0 0 var(--k),4px 0 0 0 var(--k),inset 0 -4px 0 rgba(0,0,0,.25),4px 8px 0 0 rgba(0,0,0,.45)}
+.card:active{transform:translateY(4px)}
+.card .no{font-size:12px;color:var(--dim)}
+.card .nm{font-size:18px;color:var(--ink);margin:2px 0 4px;line-height:1.3}
+.card .meta{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.diff{color:var(--sand);letter-spacing:1px}
+.best{color:var(--sand);font-size:13px}
+.card.done{background:#24384a}
+.card.done::after{content:"CLEAR";position:absolute;top:8px;right:8px;font-size:10px;color:var(--green);letter-spacing:1px}
+
+/* game */
+.hud{display:flex;justify-content:space-between;align-items:center;margin:0 6px 4px;font-size:14px}
+.hearts{color:var(--red);letter-spacing:2px;font-size:18px}
+.hearts .lost{color:#3a3f5c}
+.surface{font-size:15px;line-height:1.75}
+.surface-panel{max-height:34vh;overflow-y:auto}
+.surface-panel.collapsed{max-height:64px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 50%,transparent)}
+.toggle-surface{background:none;border:0;color:var(--teal);font-size:13px;padding:2px 6px;margin-left:auto;display:block}
+.section-label{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--teal);margin:10px 6px 2px}
+.tabs{display:flex;gap:6px;margin:6px 4px 2px}
+.tab{flex:1;border:0;background:var(--bg2);color:var(--dim);padding:8px 4px;font-size:14px;
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k)}
+.tab.on{background:var(--panel2);color:var(--sand)}
+.qlist{list-style:none;margin:0;padding:0}
+.q{display:flex;align-items:center;gap:8px;width:100%;border:0;text-align:left;background:var(--bg2);margin:8px 2px;padding:10px 12px;font-size:15px;line-height:1.4;
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k),inset 0 -3px 0 rgba(0,0,0,.3)}
+.q:active{transform:translateY(3px)}
+.q .qt{flex:1}
+.q .qmark{color:var(--teal)}
+.q.asked{background:#191d33;color:var(--dim)}
+.q.asked .qmark{display:none}
+.q.key.asked .qt::before{content:"★ ";color:var(--sand)}
+.clue{font-size:15px;padding:8px 10px;margin:8px 2px;background:#2e2a1f;color:var(--sand);
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k)}
+.empty{color:var(--dim);font-size:14px;text-align:center;padding:24px 8px}
+.actionbar{display:flex;gap:6px;padding:8px 2px 2px}
+.actionbar .btn{margin:6px 3px;font-size:15px;padding:12px 6px;width:auto;flex:1;white-space:nowrap}
+.actionbar #guessBtn{flex:1.7}
+
+/* stamp */
+#stamp{white-space:nowrap;position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-size:56px;padding:6px 26px;
+  transform:translate(-50%,-50%) rotate(-8deg) scale(0);opacity:0;color:#0c1a24;letter-spacing:4px;
+  box-shadow:0 -6px 0 0 var(--k),0 6px 0 0 var(--k),-6px 0 0 0 var(--k),6px 0 0 0 var(--k),8px 12px 0 0 rgba(0,0,0,.5)}
+#stamp.show{animation:stamp .9s steps(6) forwards}
+@keyframes stamp{0%{transform:translate(-50%,-50%) rotate(-8deg) scale(2.2);opacity:0}
+  20%{transform:translate(-50%,-50%) rotate(-8deg) scale(1);opacity:1}
+  80%{opacity:1}100%{transform:translate(-50%,-50%) rotate(-8deg) scale(1);opacity:0}}
+#stamp.y{background:var(--green)} #stamp.n{background:var(--red)} #stamp.i{background:var(--dim)} #stamp.p{background:var(--sand)}
+
+/* modal */
+#modal{position:fixed;inset:0;z-index:50;background:rgba(6,8,15,.78);display:none;align-items:center;justify-content:center;padding:18px}
+#modal.open{display:flex}
+#modal .box{width:100%;max-width:440px;max-height:88dvh;overflow-y:auto;background:var(--panel);padding:18px 16px 12px;animation:pop .2s steps(3);
+  box-shadow:0 -4px 0 0 var(--k),0 4px 0 0 var(--k),-4px 0 0 0 var(--k),4px 0 0 0 var(--k),inset 0 4px 0 rgba(255,255,255,.08),8px 12px 0 0 rgba(0,0,0,.5)}
+@keyframes pop{from{transform:scale(.8)}to{transform:none}}
+#modal h2{margin:0 0 10px;color:var(--sand);font-size:22px;text-align:center;letter-spacing:2px}
+#modal .body{font-size:15px;line-height:1.75}
+.choice{display:block;width:100%;text-align:left;border:0;background:var(--bg2);margin:10px 0;padding:10px 12px;font-size:15px;line-height:1.5;
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k),inset 0 -3px 0 rgba(0,0,0,.3)}
+.choice b{color:var(--teal);margin-right:6px}
+.choice:active{transform:translateY(3px)}
+.shake{animation:shake .4s steps(4)}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
+.bigstars{font-size:40px;text-align:center;letter-spacing:8px;color:var(--sand);margin:4px 0 6px}
+.bigstars .off{color:#3a3f5c}
+.bottom-text{background:var(--bg2);padding:12px;margin:10px 0;font-size:15px;line-height:1.8;
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k)}
+.scoreline{font-size:13px;color:var(--dim);text-align:center}
+
+/* host */
+.host-answers{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.host-answers .btn{font-size:22px;padding:18px 8px;width:auto}
+.reveal{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.secret{filter:blur(7px);transition:filter .1s steps(2)}
+.secret.on{filter:none}
+.counter{font-size:14px;color:var(--dim);text-align:center;margin:6px 0}
+
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:70;background:var(--k);color:var(--sand);
+  padding:8px 14px;font-size:14px;display:none;max-width:90%;text-align:center;box-shadow:0 0 0 3px var(--sand)}
+#toast.show{display:block;animation:fadeIn .2s steps(3)}
+.foot{font-size:11px;color:#59608a;text-align:center;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <section class="screen active" id="title">
+    <div class="logo-wrap"><svg id="sprite" viewBox="0 0 20 16" shape-rendering="crispEdges" aria-hidden="true"></svg></div>
+    <div class="game-title">海龜湯</div>
+    <div class="subtitle">TURTLE SOUP · 是非推理</div>
+    <div class="menu">
+      <button class="btn sand" data-go="select" data-mode="solo">▶ 開始遊戲</button>
+      <button class="btn" data-go="rules">📜 遊戲規則</button>
+      <button class="btn purple" data-go="select" data-mode="host">🎙 主持人模式</button>
+      <div class="row">
+        <button class="btn ghost small" id="soundBtn">🔊 音效：開</button>
+        <button class="btn ghost small" id="resetAllBtn">↻ 重新開始</button>
+      </div>
+    </div>
+    <div class="stat-line" id="statLine"></div>
+    <div class="stat-line blink">— 點選開始 —</div>
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <!-- RULES -->
+  <section class="screen" id="rules">
+    <div class="topbar"><button class="icon-btn" data-go="title" aria-label="返回">◀</button><div class="t">遊戲規則</div></div>
+    <div class="scroll rules">
+      <div class="panel">
+        <h3>■ 什麼是海龜湯？</h3>
+        <p>海龜湯是一種「情境推理」遊戲。你會看到一段奇怪、不合理的故事開頭，叫做<b style="color:var(--teal)">「湯面」</b>。你要透過提問，推理出背後完整的真相，叫做<b style="color:var(--coral)">「湯底」</b>。</p>
+      </div>
+      <div class="panel">
+        <h3>■ 單人玩法</h3>
+        <ol>
+          <li>選一碗湯，仔細閱讀湯面。</li>
+          <li>點選問題來提問，只會得到三種回答：<br><span class="ans y">是</span> <span class="ans n">不是</span> <span class="ans i">不重要</span></li>
+          <li>重要的答案會變成 <span style="color:var(--sand)">★ 線索</span>，自動記在「線索筆記」裡。</li>
+          <li>想通了就按 <b style="color:var(--sand)">「我知道了」</b>，從四個選項中選出湯底。</li>
+          <li>你有 <span style="color:var(--red)">♥♥♥</span> 三次機會，猜錯會扣一顆心，扣完就自動公布湯底。</li>
+          <li>卡關時可以按 <b>「提示」</b>，系統會幫你問一個關鍵問題。</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h3>■ 評分方式</h3>
+        <p>猜對湯底基本得 <span style="color:var(--sand)">★★★</span>，以下情況各扣一顆星（最少一顆）：</p>
+        <ul>
+          <li>提問數超過題目的一半</li>
+          <li>使用過提示</li>
+          <li>猜錯過答案</li>
+        </ul>
+        <p class="muted tiny">紀錄會存在這支手機的瀏覽器裡。標題畫面按「重新開始」可清除全部紀錄。</p>
+      </div>
+      <div class="panel">
+        <h3>■ 主持人模式（多人）</h3>
+        <p>適合朋友聚會：一個人當主持人拿著手機，按住按鈕偷看湯底，其他人自由口頭提問。主持人按 <span class="ans y">是</span> <span class="ans n">不是</span> <span class="ans i">不重要</span> <span class="ans" style="background:var(--sand)">接近了</span> 回答，畫面會跳出大大的印章給大家看。</p>
+      </div>
+      <div class="panel">
+        <h3>■ 湯的種類</h3>
+        <p><span class="tag clear">清湯</span>故事溫和，適合所有人。</p>
+        <p><span class="tag red">紅湯</span>含有死亡、意外等較黑暗的情節。</p>
+      </div>
+      <button class="btn sand" data-go="select" data-mode="solo">▶ 我懂了，開始！</button>
+    </div>
+  </section>
+
+  <!-- SELECT -->
+  <section class="screen" id="select">
+    <div class="topbar"><button class="icon-btn" data-go="title" aria-label="返回">◀</button><div class="t" id="selectTitle">選一碗湯</div></div>
+    <div class="scroll"><div class="cards" id="cards"></div></div>
+  </section>
+
+  <!-- GAME -->
+  <section class="screen" id="game">
+    <div class="topbar">
+      <button class="icon-btn" data-go="select" aria-label="返回">◀</button>
+      <div class="t" id="gTitle"></div>
+      <button class="icon-btn" id="restartBtn" aria-label="重新開始這碗">↻</button>
+    </div>
+    <div class="hud"><span class="hearts" id="hearts"></span><span class="muted" id="qCount"></span></div>
+    <div class="panel surface-panel" id="surfacePanel">
+      <h3>湯面</h3>
+      <div class="surface" id="gSurface"></div>
+    </div>
+    <button class="toggle-surface" id="toggleSurface">▲ 收起湯面</button>
+    <div class="tabs">
+      <button class="tab on" data-tab="ask">提問</button>
+      <button class="tab" data-tab="clues">線索筆記 <span id="clueCount"></span></button>
+    </div>
+    <div class="scroll" id="tabAsk"><ul class="qlist" id="qlist"></ul></div>
+    <div class="scroll" id="tabClues" hidden></div>
+    <div class="actionbar">
+      <button class="btn ghost" id="hintBtn">💡提示</button>
+      <button class="btn sand" id="guessBtn">🍲 我知道了</button>
+      <button class="btn coral" id="giveupBtn">🏳 放棄</button>
+    </div>
+  </section>
+
+  <!-- HOST -->
+  <section class="screen" id="host">
+    <div class="topbar">
+      <button class="icon-btn" data-go="select" aria-label="返回">◀</button>
+      <div class="t" id="hTitle"></div>
+      <button class="icon-btn" id="hostRestart" aria-label="重新開始">↻</button>
+    </div>
+    <div class="scroll">
+      <div class="panel"><h3>湯面（念給大家聽）</h3><div class="surface" id="hSurface"></div></div>
+      <div class="host-answers">
+        <button class="btn green" data-host="y">是</button>
+        <button class="btn coral" data-host="n">不是</button>
+        <button class="btn ghost" data-host="i">不重要</button>
+        <button class="btn sand" data-host="p">接近了</button>
+      </div>
+      <div class="counter" id="hCounter"></div>
+      <div class="panel">
+        <h3>湯底（只有主持人能看）</h3>
+        <div class="surface secret" id="hBottom"></div>
+      </div>
+      <button class="btn purple reveal" id="peekBtn">👁 按住偷看湯底</button>
+      <button class="btn coral" id="announceBtn">📢 公布湯底</button>
+    </div>
+  </section>
+
+</div>
+
+<div id="modal" role="dialog" aria-modal="true"><div class="box" id="modalBox"></div></div>
+<div id="stamp"></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   題庫：每碗湯 = 湯面 + 湯底 + 問題(是y/不是n/不重要i) + 四選一
+   key:true 的問題答出來會變成線索；clue 是寫進筆記的文字
+   想新增題目，照格式往下加一碗就可以
+   ========================================================= */
+const PUZZLES = [
+{
+  id:"elevator", title:"電梯怪人", type:"clear", diff:1,
+  surface:"一個男人住在大樓的 20 樓。每天早上，他搭電梯直接下到 1 樓去上班。晚上回家時，他卻只搭到 12 樓，再爬樓梯走上 20 樓。只有下雨的日子，他才會直接搭到 20 樓。為什麼？",
+  bottom:"男人的個子非常矮，伸手只按得到 12 樓的按鈕。下樓時，1 樓的按鈕在最下面，所以沒問題。下雨天他會帶雨傘出門，可以用傘尖按到 20 樓的按鈕。",
+  questions:[
+    ["他喜歡運動，想多爬樓梯嗎？","n"],
+    ["電梯壞掉了嗎？","n"],
+    ["12 樓有他認識的人嗎？","n"],
+    ["原因跟他的身體有關嗎？","y",true,"原因跟他的身體條件有關。"],
+    ["他的個子很矮嗎？","y",true,"他的個子很矮。"],
+    ["問題出在電梯按鈕嗎？","y",true,"問題出在電梯的按鈕上。"],
+    ["下雨天他會多帶一樣東西嗎？","y",true,"下雨天他會帶雨傘。"],
+    ["有別人一起搭電梯時，他會直接到 20 樓嗎？","y",true,"有人幫忙按時，他就能直接到 20 樓。"],
+    ["他住的大樓很老舊嗎？","i"],
+    ["天氣會影響他的心情嗎？","n"],
+    ["他晚上通常很累嗎？","i"]
+  ],
+  choices:[
+    "他太矮了，只按得到 12 樓；下雨天能用雨傘按到 20 樓。",
+    "他想多運動，但下雨天心情不好，不想爬樓梯。",
+    "12 樓住著他的前女友，下雨天她不會在家。",
+    "大樓晚上會限制電梯樓層，下雨天管理員才會解除。"
+  ]
+},
+{
+  id:"bald", title:"雨中的頭髮", type:"clear", diff:1,
+  surface:"一個男人走在大雨中，沒有撐傘，也沒有戴帽子，身上沒有任何東西可以遮雨。他全身都濕透了，但頭上的頭髮卻一根也沒有濕。為什麼？",
+  bottom:"因為他是光頭，頭上本來就沒有頭髮。頭雖然濕了，但「頭髮」一根也沒有濕。",
+  questions:[
+    ["他有用東西遮住頭嗎？","n"],
+    ["下的是真正的雨嗎？","y"],
+    ["他的頭其實是濕的嗎？","y",true,"他的頭其實是濕的。"],
+    ["他有頭髮嗎？","n",true,"他頭上沒有頭髮。"],
+    ["他戴了假髮嗎？","n"],
+    ["他走得很快嗎？","i"],
+    ["這是魔術或超能力嗎？","n"],
+    ["題目的說法有玄機嗎？","y",true,"題目的說法是個文字陷阱。"],
+    ["跟他的年紀有關嗎？","i"],
+    ["他的頭髮有抹東西嗎？","n"]
+  ],
+  choices:[
+    "他是光頭，根本沒有頭髮可以濕。",
+    "他的頭髮抹了很厚的防水髮膠。",
+    "他一直低著頭，用身體擋住雨。",
+    "他戴著透明的雨帽，大家都沒發現。"
+  ]
+},
+{
+  id:"twins", title:"不是雙胞胎", type:"clear", diff:1,
+  surface:"小安和小寧是同一對父母生的，在同一年、同一個月、同一天出生，兩個人長得一模一樣。可是每次有人問她們是不是雙胞胎，她們都說不是。她們沒有說謊，為什麼？",
+  bottom:"她們是三胞胎中的其中兩個，所以不是「雙胞胎」。",
+  questions:[
+    ["她們是親姊妹嗎？","y"],
+    ["她們真的是同一天出生的嗎？","y"],
+    ["她們有說謊嗎？","n"],
+    ["其中一個是領養的嗎？","n"],
+    ["家裡還有其他同一天出生的孩子嗎？","y",true,"家裡還有同一天出生的孩子。"],
+    ["跟時區或跨年有關嗎？","n"],
+    ["她們只是不喜歡被叫雙胞胎嗎？","n"],
+    ["「人數」是關鍵嗎？","y",true,"關鍵在於一共有幾個人。"],
+    ["她們是複製人嗎？","n"],
+    ["她們的個性一樣嗎？","i"]
+  ],
+  choices:[
+    "她們是三胞胎中的兩個。",
+    "其中一個是領養的，只是剛好長得像。",
+    "她們出生在不同時區，日期其實不同。",
+    "她們覺得被叫雙胞胎很煩，所以開玩笑。"
+  ]
+},
+{
+  id:"water", title:"一杯水", type:"clear", diff:2,
+  surface:"一個男人走進酒吧，向酒保要一杯水。酒保看了他一眼，突然從櫃檯下拿出一把槍指著他。男人愣了一下，接著說了聲「謝謝」，就開心地離開了。為什麼？",
+  bottom:"男人一直在打嗝，想喝水止嗝。酒保聽出他在打嗝，故意拿槍嚇他。男人被嚇了一大跳，打嗝就停了，也不需要喝水了，所以道謝離開。",
+  questions:[
+    ["酒保想搶劫他嗎？","n"],
+    ["他們本來就認識嗎？","n"],
+    ["槍是真的嗎？","i"],
+    ["男人要水是因為口渴嗎？","n",true,"他要水並不是因為口渴。"],
+    ["男人身體有點不舒服嗎？","y",true,"他的身體有一點小狀況。"],
+    ["酒保是聽到了什麼聲音嗎？","y",true,"酒保是聽到某種聲音才拿出槍。"],
+    ["酒保其實是在幫他嗎？","y",true,"酒保其實是在幫忙。"],
+    ["男人被嚇到這件事很重要嗎？","y",true,"「被嚇一跳」就是解法。"],
+    ["是很嚴重的病嗎？","n"],
+    ["他在打嗝嗎？","y",true,"他一直在打嗝！"],
+    ["男人最後有喝到水嗎？","n"],
+    ["酒吧裡還有其他客人嗎？","i"]
+  ],
+  choices:[
+    "他在打嗝，酒保用槍嚇他，打嗝就好了。",
+    "男人是便衣警察，在測試酒保會不會違法。",
+    "槍其實是水槍，酒保在開玩笑。",
+    "男人本來要報仇，看到槍就改變主意。"
+  ]
+},
+{
+  id:"lights", title:"三次閃燈", type:"clear", diff:2,
+  surface:"每天晚上九點整，小薇都會把房間的燈開關三次，風雨無阻。有一天晚上她忘記了。十分鐘後，她家的門鈴響了。為什麼？",
+  bottom:"小薇家對面住著獨居的陳奶奶。她們約好每晚九點互相閃燈三次報平安。那天小薇忘了閃燈，奶奶擔心她出事，特地走過來按門鈴看看她。",
+  questions:[
+    ["閃燈是一種暗號嗎？","y",true,"閃燈是在傳訊息。"],
+    ["暗號是給她家人看的嗎？","n"],
+    ["有人每晚都在看她的燈嗎？","y",true,"有人每天晚上都在看她的燈。"],
+    ["按門鈴的人住在附近嗎？","y",true,"按門鈴的人住得很近。"],
+    ["按門鈴的人是壞人嗎？","n"],
+    ["按門鈴的人是因為擔心她嗎？","y",true,"對方是因為擔心才跑來。"],
+    ["按門鈴的人年紀很大嗎？","y"],
+    ["對方也會閃燈回應嗎？","y",true,"對方也會閃燈回應她。"],
+    ["小薇在練習摩斯密碼嗎？","n"],
+    ["跟電費或電燈壞掉有關嗎？","n"],
+    ["小薇在談戀愛嗎？","n"],
+    ["小薇住幾樓重要嗎？","i"]
+  ],
+  choices:[
+    "她和對面獨居的奶奶用閃燈互報平安，奶奶沒看到就來關心她。",
+    "那是她和男友的約會暗號，男友沒看到就直接來找她。",
+    "電力公司在檢測燈泡，發現異常就派人來。",
+    "她跟鄰居打賭，忘記閃燈的人要被按門鈴。"
+  ]
+},
+{
+  id:"letter", title:"空白的信", type:"clear", diff:2,
+  surface:"阿哲在外地工作。有一天，他收到一封從老家寄來的信。打開信封，裡面只有一張白紙，一個字也沒有。阿哲看完卻鬆了一口氣，還笑了出來。為什麼？",
+  bottom:"阿哲的媽媽不識字。阿哲離家前和她約好：家裡一切平安，就寄一張白紙；如果有事，就在紙上畫一個叉。收到白紙，代表家裡都好。",
+  questions:[
+    ["信是家人寄的嗎？","y",true,"信是家人寄來的。"],
+    ["紙上有隱形墨水嗎？","n"],
+    ["寄信的人會寫字嗎？","n",true,"寄信的人不會寫字。"],
+    ["他們事前有約定嗎？","y",true,"他們事前約好了規則。"],
+    ["白紙代表好消息嗎？","y",true,"白紙代表一切沒事。"],
+    ["信封裡有錢或其他東西嗎？","n"],
+    ["是寄錯信了嗎？","n"],
+    ["寄信的人是長輩嗎？","y"],
+    ["阿哲一直在等某個消息嗎？","y"],
+    ["如果有壞消息，紙上會有記號嗎？","y",true,"有事的話，紙上會有記號。"],
+    ["阿哲的工作內容重要嗎？","i"]
+  ],
+  choices:[
+    "不識字的媽媽和他約好：寄白紙代表家裡平安。",
+    "紙上用檸檬汁寫了字，要加熱才看得到。",
+    "那是他自己忘記寄出、被退回來的信。",
+    "白紙是房東寄來的，代表不用付房租了。"
+  ]
+},
+{
+  id:"lighthouse", title:"關燈之後", type:"red", diff:3,
+  surface:"一個男人晚上關了燈，像平常一樣上床睡覺。隔天早上，他看到新聞後崩潰大哭，因為他知道，是自己害死了很多人。為什麼？",
+  bottom:"他是燈塔看守員。那天晚上他一時疏忽，把燈塔的燈關掉了。一艘船在黑暗中看不到燈塔的指引，撞上礁石沉沒，船上很多人罹難。",
+  questions:[
+    ["他是故意的嗎？","n"],
+    ["他關的是家裡的電燈嗎？","n",true,"他關的不是普通的電燈。"],
+    ["這跟他的工作有關嗎？","y",true,"這件事跟他的工作有關。"],
+    ["出事的地方在陸地上嗎？","n",true,"出事地點不在陸地上。"],
+    ["是交通事故嗎？","y"],
+    ["跟海有關嗎？","y",true,"事情發生在海上。"],
+    ["他住在很偏僻的地方嗎？","y"],
+    ["死者他都認識嗎？","n"],
+    ["那天晚上有停電嗎？","n"],
+    ["是一艘船出事了嗎？","y",true,"一艘船出事了。"],
+    ["他是醫生嗎？","n"],
+    ["那天晚上天氣很好嗎？","i"]
+  ],
+  choices:[
+    "他是燈塔看守員，關了燈塔的燈，害船撞上礁石。",
+    "他是機場塔台人員，關掉了跑道燈。",
+    "他是醫院的電工，關燈讓手術中斷。",
+    "他關掉了平交道的號誌燈，造成火車事故。"
+  ]
+},
+{
+  id:"match", title:"半根火柴", type:"red", diff:3,
+  surface:"在一望無際的沙漠中央，有人發現了一具男性遺體。他全身赤裸，四周沒有任何腳印，手裡緊緊握著半根火柴。到底發生了什麼事？",
+  bottom:"他和幾個朋友搭熱氣球飛越沙漠，途中氣球漏氣快速下降。他們把行李、衣服全部丟掉還是不夠輕，只好用火柴抽籤，抽到半根（短的）的人要跳下去減重。他抽中了。",
+  questions:[
+    ["他是被人推下去的嗎？","n"],
+    ["他是走路進沙漠的嗎？","n",true,"他不是走進沙漠的。"],
+    ["他是從空中掉下來的嗎？","y",true,"他是從空中掉下來的。"],
+    ["他是搭飛機嗎？","n"],
+    ["當時還有其他人在場嗎？","y",true,"當時還有其他人。"],
+    ["衣服是他自己脫掉的嗎？","y",true,"衣服是他自己脫掉丟掉的。"],
+    ["火柴是用來點火的嗎？","n",true,"火柴不是用來點火的。"],
+    ["火柴是用來抽籤的嗎？","y",true,"火柴是用來抽籤的。"],
+    ["跟「重量」有關嗎？","y",true,"重量是關鍵。"],
+    ["他是渴死或熱死的嗎？","n"],
+    ["是熱氣球嗎？","y",true,"他們搭的是熱氣球。"],
+    ["他的朋友們後來得救了嗎？","i"]
+  ],
+  choices:[
+    "熱氣球太重往下掉，大家抽籤，抽到短火柴的他跳下去減重。",
+    "他迷路太久中暑，脫光衣服想散熱，最後倒下。",
+    "他想點火求救，但火柴只剩半根點不著。",
+    "他被綁架後丟在沙漠，火柴是綁匪留下的記號。"
+  ]
+},
+{
+  id:"turtle", title:"海龜湯", type:"red", diff:4,
+  surface:"一個男人走進海邊的餐廳，點了一碗海龜湯。他只喝了一口，就放下湯匙問服務生：「這真的是海龜湯嗎？」服務生說是。男人臉色發白，付了錢離開。當天晚上，他結束了自己的生命。為什麼？",
+  bottom:"多年前，男人和妻子搭的船遇上船難，和幾個同伴漂流到荒島。妻子在途中過世。同伴為了讓虛弱的他活下去，煮了一碗說是「海龜湯」的湯給他喝，他靠著那碗湯撐到獲救。今天喝到真正的海龜湯，味道完全不一樣，他才明白當年那碗湯是用什麼煮的，承受不了這個打擊。",
+  questions:[
+    ["湯有毒嗎？","n"],
+    ["他以前喝過「海龜湯」嗎？","y",true,"他以前喝過「海龜湯」。"],
+    ["這次的味道跟以前一樣嗎？","n",true,"味道跟他記憶中的不一樣。"],
+    ["服務生說謊了嗎？","n"],
+    ["以前那碗是真的海龜湯嗎？","n",true,"以前那碗不是真的海龜湯。"],
+    ["他以前遇過意外嗎？","y",true,"他過去遇過一場意外。"],
+    ["那場意外跟船有關嗎？","y",true,"那場意外是船難。"],
+    ["那次意外有人過世嗎？","y",true,"那次意外有人過世。"],
+    ["他的家人也牽涉其中嗎？","y",true,"他的家人也牽涉其中。"],
+    ["他對海龜過敏嗎？","n"],
+    ["他欠了很多錢嗎？","n"],
+    ["他是廚師嗎？","i"],
+    ["他當年是在荒島上喝的嗎？","y",true,"當年那碗湯是在荒島上喝的。"]
+  ],
+  choices:[
+    "當年船難漂流時喝的「海龜湯」其實不是海龜，他今天才明白真相。",
+    "他是動物保育員，發現餐廳違法煮保育類海龜。",
+    "湯裡有他過敏的食材，他知道自己撐不過今晚。",
+    "這家店是他當年和妻子約會的地方，湯的味道讓他太過思念。"
+  ]
+}
+];
+
+/* ---------- utilities ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem("tsoup_"+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem("tsoup_"+k,JSON.stringify(v)); }catch(e){} },
+  clear(){ try{ Object.keys(localStorage).filter(k=>k.startsWith("tsoup_")).forEach(k=>localStorage.removeItem(k)); }catch(e){} }
+};
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const ANS = {y:"是",n:"不是",i:"不重要",p:"接近了"};
+const stars = (n,max=3) => "★".repeat(n)+"☆".repeat(max-n);
+
+/* ---------- 8-bit sound ---------- */
+let soundOn = store.get("sound", true), actx=null;
+function beep(notes){
+  if(!soundOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    let t = actx.currentTime;
+    notes.forEach(([f,d])=>{
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type="square"; o.frequency.value=f; g.gain.setValueAtTime(.06,t); g.gain.exponentialRampToValueAtTime(.001,t+d);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t+d); t+=d*.9;
+    });
+  }catch(e){}
+}
+const SFX = {
+  tap:()=>beep([[660,.05]]),
+  y:()=>beep([[523,.08],[784,.12]]),
+  n:()=>beep([[330,.1],[220,.16]]),
+  i:()=>beep([[440,.08],[440,.08]]),
+  p:()=>beep([[523,.06],[659,.06],[784,.06]]),
+  clue:()=>beep([[784,.06],[988,.06],[1319,.12]]),
+  win:()=>beep([[523,.1],[659,.1],[784,.1],[1047,.25]]),
+  lose:()=>beep([[392,.15],[330,.15],[262,.3]])
+};
+
+/* ---------- pixel sprite ---------- */
+const SPRITE = [
+"......w.....w.......",
+".....w.....w........",
+"......w.....w.......",
+".....w.....w........",
+"......KKKKKKK.......",
+"....KKGGLGGGLKK.hhh.",
+"...KGGLLLGGLLLGKhHHh",
+"...KGLLGGGLLGGGhHEHh",
+"..KGGGGLLGGGGLGKhHHh",
+"..KGGLLLGGLLLGGGKhh.",
+"RRRRRRRRRRRRRRRRRRRR",
+"RYYYYYYYYYYYYYYYYYYR",
+".RrrrrrrrrrrrrrrrrR.",
+"..RrrrrrrwrrwrrrrR..",
+"...RRrrrrrrrrrrRR...",
+".....RRRRRRRRRR.....",
+];
+const PAL = {K:"#0b2a2a",G:"#3fa36b",L:"#7fd38a",h:"#0b2a2a",H:"#9be08a",E:"#06080f",R:"#7a2a22",r:"#e8705a",Y:"#f2c14e",w:"#e9f5f2"};
+(function drawSprite(){
+  let steam="", head="", body="";
+  SPRITE.forEach((row,y)=>[...row].forEach((c,x)=>{
+    if(c===".") return;
+    let fill = PAL[c];
+    if(c==="w" && y>12) fill="#f7a08c";
+    const r=`<rect x="${x}" y="${y}" width="1" height="1" fill="${fill}"/>`;
+    if(c==="w" && y<4) steam+=r; else if((c==="h"||c==="H"||c==="E")) head+=r; else body+=r;
+  }));
+  $("#sprite").innerHTML = `<g class="steam">${steam}</g><g class="head">${head}</g>${body}`;
+})();
+
+/* ---------- navigation ---------- */
+let mode = "solo";
+function go(id){
+  $$(".screen").forEach(s=>s.classList.toggle("active", s.id===id));
+  if(id==="select") renderSelect();
+  if(id==="title") renderTitle();
+  window.scrollTo(0,0);
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-go]");
+  if(!b) return;
+  SFX.tap();
+  if(b.dataset.mode) mode = b.dataset.mode;
+  go(b.dataset.go);
+});
+
+/* ---------- toast / modal / stamp ---------- */
+let toastT;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
+function openModal(html){ $("#modalBox").innerHTML=html; $("#modal").classList.add("open"); $("#modalBox").scrollTop=0; }
+function closeModal(){ $("#modal").classList.remove("open"); }
+$("#modal").addEventListener("click", e=>{ if(e.target.id==="modal" && !$("#modal").dataset.lock) closeModal(); });
+function confirmBox(title,msg,okText,onOk){
+  openModal(`<h2>${title}</h2><div class="body center">${msg}</div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost" id="mNo">取消</button><button class="btn coral" id="mYes">${okText}</button></div>`);
+  $("#mNo").onclick=()=>{SFX.tap();closeModal();};
+  $("#mYes").onclick=()=>{SFX.tap();closeModal();onOk();};
+}
+let stampT;
+function stamp(k){
+  const s=$("#stamp"); s.className=""; void s.offsetWidth;
+  s.textContent=ANS[k]; s.className="show "+k; SFX[k]();
+  clearTimeout(stampT); stampT=setTimeout(()=>s.className="",950);
+}
+
+/* ---------- title ---------- */
+function renderTitle(){
+  const best = store.get("best",{});
+  const cleared = PUZZLES.filter(p=>best[p.id]).length;
+  const total = PUZZLES.reduce((s,p)=>s+(best[p.id]||0),0);
+  $("#statLine").textContent = `已破解 ${cleared} / ${PUZZLES.length} 碗　★ ${total} / ${PUZZLES.length*3}`;
+  $("#soundBtn").textContent = soundOn ? "🔊 音效：開" : "🔇 音效：關";
+}
+$("#soundBtn").onclick=()=>{ soundOn=!soundOn; store.set("sound",soundOn); renderTitle(); SFX.tap(); };
+$("#resetAllBtn").onclick=()=>{ SFX.tap(); confirmBox("重新開始？","會清除所有破關紀錄和星星，<br>確定要從頭開始嗎？","全部重來",()=>{ store.clear(); store.set("sound",soundOn); renderTitle(); toast("紀錄已清除，重新出發！"); }); };
+
+/* ---------- select ---------- */
+function renderSelect(){
+  $("#selectTitle").textContent = mode==="host" ? "主持人：選一碗湯" : "選一碗湯";
+  const best = store.get("best",{});
+  $("#cards").innerHTML = PUZZLES.map((p,i)=>`
+    <button class="card ${mode==="solo"&&best[p.id]?"done":""}" data-pid="${p.id}">
+      <span class="no">No.${String(i+1).padStart(2,"0")}</span>
+      <span class="nm">${p.title}</span>
+      <span><span class="tag ${p.type==="red"?"red":"clear"}">${p.type==="red"?"紅湯":"清湯"}</span></span>
+      <span class="meta"><span class="diff">難度 ${"■".repeat(p.diff)}<span style="color:#3a3f5c">${"■".repeat(4-p.diff)}</span></span>
+      ${mode==="solo"&&best[p.id]?`<span class="best">${stars(best[p.id])}</span>`:""}</span>
+    </button>`).join("");
+  $$("#cards .card").forEach(c=>c.onclick=()=>{
+    SFX.tap();
+    const p = PUZZLES.find(x=>x.id===c.dataset.pid);
+    if(p.type==="red"){
+      confirmBox("⚠ 紅湯","這碗湯包含死亡、意外等較黑暗的情節，<br>確定要喝嗎？","喝！",()=> mode==="host"?startHost(p):startGame(p));
+    } else mode==="host"?startHost(p):startGame(p);
+  });
+}
+
+/* ---------- solo game ---------- */
+let G = null;
+function startGame(p){
+  G = { p, order: shuffle(p.questions.map((_,i)=>i)), asked:[], lives:3, hints:0, wrong:0, done:false };
+  $("#gTitle").textContent = p.title;
+  $("#gSurface").textContent = p.surface;
+  $("#surfacePanel").classList.remove("collapsed");
+  $("#toggleSurface").textContent = "▲ 收起湯面";
+  switchTab("ask");
+  go("game");
+  renderGame();
+}
+function renderGame(){
+  const p=G.p;
+  $("#hearts").innerHTML = "♥".repeat(G.lives)+`<span class="lost">${"♥".repeat(3-G.lives)}</span>`;
+  $("#qCount").textContent = `已問 ${G.asked.length} / ${p.questions.length} 題`;
+  $("#qlist").innerHTML = G.order.map(i=>{
+    const [q,a,key]=p.questions[i]; const asked=G.asked.includes(i);
+    return `<li><button class="q ${asked?"asked":""} ${key?"key":""}" data-qi="${i}" ${asked?"aria-disabled='true'":""}>
+      <span class="qmark">?</span><span class="qt">${q}</span>${asked?`<span class="ans ${a}">${ANS[a]}</span>`:""}</button></li>`;
+  }).join("");
+  $$("#qlist .q").forEach(b=>b.onclick=()=>ask(+b.dataset.qi));
+  const clues = G.asked.filter(i=>p.questions[i][2]).map(i=>p.questions[i][3]);
+  $("#clueCount").textContent = clues.length?`(${clues.length})`:"";
+  $("#tabClues").innerHTML = clues.length
+    ? clues.map((c,n)=>`<div class="clue">★ ${String(n+1).padStart(2,"0")}　${c}</div>`).join("")
+    : `<div class="empty">還沒有線索。<br>問到關鍵問題時，線索會自動記在這裡。</div>`;
+}
+function ask(i, viaHint){
+  if(G.done) return;
+  if(G.asked.includes(i)){ toast("這題問過了"); return; }
+  G.asked.push(i);
+  const [,a,key]=G.p.questions[i];
+  stamp(a);
+  if(key) setTimeout(()=>{ SFX.clue(); toast(viaHint?"💡 提示："+G.p.questions[i][3]:"★ 發現線索！"); },500);
+  renderGame();
+  // move asked item feedback: keep scroll; collapse surface after first ask for space
+  if(G.asked.length===1) collapseSurface(true);
+}
+function collapseSurface(c){
+  $("#surfacePanel").classList.toggle("collapsed",c);
+  $("#toggleSurface").textContent = c ? "▼ 展開湯面" : "▲ 收起湯面";
+}
+$("#toggleSurface").onclick=()=>{ SFX.tap(); collapseSurface(!$("#surfacePanel").classList.contains("collapsed")); };
+function switchTab(t){
+  $$(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  $("#tabAsk").hidden = t!=="ask"; $("#tabClues").hidden = t!=="clues";
+}
+$$(".tab").forEach(b=>b.onclick=()=>{SFX.tap();switchTab(b.dataset.tab);});
+
+$("#hintBtn").onclick=()=>{
+  if(G.done) return;
+  const left = G.order.filter(i=>G.p.questions[i][2] && !G.asked.includes(i));
+  if(!left.length){ toast("線索都找齊了，試著猜猜看吧！"); return; }
+  SFX.tap();
+  confirmBox("💡 使用提示？","系統會幫你問一個關鍵問題。<br><span class='muted tiny'>使用提示，評分會少一顆星。</span>","給我提示",()=>{
+    G.hints++; ask(left[Math.floor(Math.random()*left.length)], true);
+  });
+};
+$("#guessBtn").onclick=()=>{
+  if(G.done) return;
+  SFX.tap();
+  const opts = shuffle(G.p.choices.map((c,i)=>({c,ok:i===0})));
+  openModal(`<h2>🍲 湯底是？</h2>
+    <div class="center muted tiny">剩下 <span style="color:var(--red)">${"♥".repeat(G.lives)}</span>，選錯會扣一顆心</div>
+    <div id="choiceWrap">${opts.map((o,n)=>`<button class="choice" data-ok="${o.ok?1:0}"><b>${"ABCD"[n]}</b>${o.c}</button>`).join("")}</div>
+    <button class="btn ghost" id="mBack">再想想</button>`);
+  $("#mBack").onclick=()=>{SFX.tap();closeModal();};
+  $$(".choice").forEach(b=>b.onclick=()=>{
+    if(b.dataset.ok==="1"){ finish(true); return; }
+    G.lives--; G.wrong++; SFX.n(); renderGame();
+    b.disabled=true; b.style.opacity=.35; b.style.textDecoration="line-through";
+    $("#modalBox").classList.remove("shake"); void $("#modalBox").offsetWidth; $("#modalBox").classList.add("shake");
+    if(G.lives<=0){ setTimeout(()=>finish(false,"心用完了"),500); }
+    else toast(`不對喔！還剩 ${G.lives} 顆心`);
+  });
+};
+$("#giveupBtn").onclick=()=>{
+  if(G.done) return;
+  SFX.tap();
+  confirmBox("🏳 放棄這碗？","放棄會直接公布湯底，<br>這碗不會得到星星。","看湯底",()=>finish(false,"放棄了"));
+};
+$("#restartBtn").onclick=()=>{
+  SFX.tap();
+  confirmBox("↻ 重新開始這碗？","目前的提問和線索會清空。","重新開始",()=>{ startGame(G.p); toast("重新開始！"); });
+};
+
+function finish(win, why){
+  G.done=true;
+  const p=G.p;
+  let s=0, notes=[];
+  if(win){
+    s=3;
+    if(G.asked.length > Math.ceil(p.questions.length/2)){ s--; notes.push("提問超過一半 -1"); }
+    if(G.hints>0){ s--; notes.push("使用提示 -1"); }
+    if(G.wrong>0){ s--; notes.push("猜錯過 -1"); }
+    s=Math.max(1,s);
+    const best=store.get("best",{}); if(!best[p.id]||best[p.id]<s){ best[p.id]=s; store.set("best",best); }
+    SFX.win();
+  } else SFX.lose();
+  const idx = PUZZLES.indexOf(p), next = PUZZLES[idx+1];
+  openModal(`<h2>${win?"🎉 答對了！":"💀 "+why}</h2>
+    ${win?`<div class="bigstars">${"★".repeat(s)}<span class="off">${"★".repeat(3-s)}</span></div>
+      <div class="scoreline">提問 ${G.asked.length} 題 · 提示 ${G.hints} 次 · 猜錯 ${G.wrong} 次</div>
+      ${notes.length?`<div class="scoreline">${notes.join("　")}</div>`:`<div class="scoreline" style="color:var(--sand)">完美破解！</div>`}`
+      :`<div class="scoreline">別灰心，看看湯底吧</div>`}
+    <div class="bottom-text"><span style="color:var(--coral)">【湯底】</span><br>${p.bottom}</div>
+    ${next?`<button class="btn sand" id="mNext">▶ 下一碗：${next.title}</button>`:`<div class="center tiny" style="color:var(--sand);margin:6px 0">你已經喝完最後一碗了！</div>`}
+    <div class="row"><button class="btn ghost" id="mRetry">↻ 再玩一次</button><button class="btn ghost" id="mMenu">☰ 選單</button></div>`);
+  $("#modal").dataset.lock="1";
+  if(next) $("#mNext").onclick=()=>{ SFX.tap(); delete $("#modal").dataset.lock; closeModal();
+    if(next.type==="red") confirmBox("⚠ 紅湯","這碗湯包含死亡、意外等較黑暗的情節，<br>確定要喝嗎？","喝！",()=>startGame(next)); else startGame(next); };
+  $("#mRetry").onclick=()=>{ SFX.tap(); delete $("#modal").dataset.lock; closeModal(); startGame(p); };
+  $("#mMenu").onclick=()=>{ SFX.tap(); delete $("#modal").dataset.lock; closeModal(); go("select"); };
+}
+
+/* ---------- host mode ---------- */
+let H=null;
+function startHost(p){
+  H={p,count:{y:0,n:0,i:0,p:0}};
+  $("#hTitle").textContent="🎙 "+p.title;
+  $("#hSurface").textContent=p.surface;
+  $("#hBottom").textContent=p.bottom;
+  $("#hBottom").classList.remove("on");
+  renderHost(); go("host");
+}
+function renderHost(){
+  const c=H.count, t=c.y+c.n+c.i+c.p;
+  $("#hCounter").textContent = `已回答 ${t} 題（是 ${c.y}・不是 ${c.n}・不重要 ${c.i}・接近 ${c.p}）`;
+}
+$$("[data-host]").forEach(b=>b.onclick=()=>{ const k=b.dataset.host; H.count[k]++; stamp(k); renderHost(); });
+const peek=$("#peekBtn");
+const peekOn=e=>{ e.preventDefault(); $("#hBottom").classList.add("on"); };
+const peekOff=()=>{ if(!H||!H.announced) $("#hBottom").classList.remove("on"); };
+peek.addEventListener("pointerdown",peekOn); peek.addEventListener("pointerup",peekOff);
+peek.addEventListener("pointerleave",peekOff); peek.addEventListener("pointercancel",peekOff);
+peek.addEventListener("contextmenu",e=>e.preventDefault());
+$("#announceBtn").onclick=()=>{
+  SFX.tap();
+  confirmBox("📢 公布湯底？","會把湯底顯示給所有人看。","公布！",()=>{
+    SFX.win();
+    openModal(`<h2>【湯底】${H.p.title}</h2><div class="bottom-text">${H.p.bottom}</div>
+      <div class="scoreline">大家一共問了 ${Object.values(H.count).reduce((a,b)=>a+b,0)} 題</div>
+      <div class="row"><button class="btn ghost" id="mClose">關閉</button><button class="btn sand" id="mHostNext">換一碗</button></div>`);
+    $("#mClose").onclick=()=>{SFX.tap();closeModal();};
+    $("#mHostNext").onclick=()=>{SFX.tap();closeModal();go("select");};
+  });
+};
+$("#hostRestart").onclick=()=>{ SFX.tap(); confirmBox("↻ 重新開始？","提問次數會歸零。","重新開始",()=>{ startHost(H.p); toast("計數已歸零"); }); };
+
+/* ---------- init ---------- */
+$("#foot").textContent = `共 ${PUZZLES.length} 碗湯 · v1.0`;
+renderTitle();
+</script>
+</body>
+</html>
