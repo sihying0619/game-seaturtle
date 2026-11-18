@@ -156,6 +156,24 @@ button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
 .actionbar{display:flex;gap:6px;padding:8px 2px 2px}
 .actionbar .btn{margin:6px 3px;font-size:15px;padding:12px 6px;width:auto;flex:1;white-space:nowrap}
 .actionbar #guessBtn{flex:1.7}
+.mode-badge{font-size:12px;padding:1px 6px;background:var(--bg2);color:var(--teal);box-shadow:0 0 0 2px var(--k)}
+.mode-badge.ai{color:var(--purple)}
+.askbar{display:flex;gap:6px;align-items:stretch;margin:6px 4px 0}
+.askbar input{flex:1;min-width:0;font-family:inherit;font-size:16px;color:var(--ink);background:var(--k);border:0;padding:10px 12px;
+  box-shadow:0 0 0 3px var(--teal);outline:none;border-radius:0;-webkit-appearance:none}
+.askbar input::placeholder{color:#5d6590}
+.askbar input:focus{box-shadow:0 0 0 3px var(--sand)}
+.askbar .btn{width:64px;flex:none;margin:0 2px 0 4px;padding:8px 0}
+.hint-note{font-size:13px;color:var(--dim);text-align:center;margin:6px 0 2px}
+.log-item{display:flex;align-items:center;gap:8px;background:var(--bg2);margin:8px 2px;padding:10px 12px;font-size:15px;line-height:1.45;
+  box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k)}
+.log-item .lq{flex:1;word-break:break-word}
+.log-item .src{display:block;font-size:11px;color:#5d6590;margin-top:2px}
+.log-item.miss{background:#191d33;color:var(--dim)}
+.log-item.miss .lq{font-size:14px}
+.log-item.pending .ans{background:var(--panel2);color:var(--dim);animation:blink .8s steps(1) infinite}
+.ans.b{background:var(--sand)} .ans.p{background:var(--sand)}
+#stamp.b{background:var(--sand)}
 
 /* stamp */
 #stamp{white-space:nowrap;position:fixed;left:50%;top:42%;z-index:60;pointer-events:none;font-size:56px;padding:6px 26px;
@@ -235,19 +253,20 @@ button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
         <h3>■ 單人玩法</h3>
         <ol>
           <li>選一碗湯，仔細閱讀湯面。</li>
-          <li>點選問題來提問，只會得到三種回答：<br><span class="ans y">是</span> <span class="ans n">不是</span> <span class="ans i">不重要</span></li>
-          <li>重要的答案會變成 <span style="color:var(--sand)">★ 線索</span>，自動記在「線索筆記」裡。</li>
+          <li>在下方輸入框<b style="color:var(--teal)">自由打字提問</b>，問題要能用「是 / 不是」回答。你會得到：<br><span class="ans y">是</span> <span class="ans n">不是</span> <span class="ans i">不重要</span> <span class="ans b">是也不是</span></li>
+          <li>想不出問題時，打開 <b>「💡 提示問題」</b>，點一題直接問。</li>
+          <li>問到關鍵的事，會變成 <span style="color:var(--sand)">★ 線索</span>，自動記在「線索」分頁裡。</li>
           <li>想通了就按 <b style="color:var(--sand)">「我知道了」</b>，從四個選項中選出湯底。</li>
           <li>你有 <span style="color:var(--red)">♥♥♥</span> 三次機會，猜錯會扣一顆心，扣完就自動公布湯底。</li>
-          <li>卡關時可以按 <b>「提示」</b>，系統會幫你問一個關鍵問題。</li>
         </ol>
+        <p class="muted tiny">右上角標示 🤖 AI 時，由 AI 理解你的問題；標示 🔤 關鍵字 時，系統只能比對和提示問題相近的問法，聽不懂會請你換個問法。</p>
       </div>
       <div class="panel">
         <h3>■ 評分方式</h3>
         <p>猜對湯底基本得 <span style="color:var(--sand)">★★★</span>，以下情況各扣一顆星（最少一顆）：</p>
         <ul>
-          <li>提問數超過題目的一半</li>
-          <li>使用過提示</li>
+          <li>提問數超過提示問題的總數</li>
+          <li>使用過提示問題</li>
           <li>猜錯過答案</li>
         </ul>
         <p class="muted tiny">紀錄會存在這支手機的瀏覽器裡。標題畫面按「重新開始」可清除全部紀錄。</p>
@@ -278,20 +297,28 @@ button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
       <div class="t" id="gTitle"></div>
       <button class="icon-btn" id="restartBtn" aria-label="重新開始這碗">↻</button>
     </div>
-    <div class="hud"><span class="hearts" id="hearts"></span><span class="muted" id="qCount"></span></div>
+    <div class="hud"><span class="hearts" id="hearts"></span><span class="mode-badge" id="modeBadge"></span><span class="muted" id="qCount"></span></div>
     <div class="panel surface-panel" id="surfacePanel">
       <h3>湯面</h3>
       <div class="surface" id="gSurface"></div>
     </div>
     <button class="toggle-surface" id="toggleSurface">▲ 收起湯面</button>
     <div class="tabs">
-      <button class="tab on" data-tab="ask">提問</button>
-      <button class="tab" data-tab="clues">線索筆記 <span id="clueCount"></span></button>
+      <button class="tab on" data-tab="log">提問紀錄</button>
+      <button class="tab" data-tab="hint">💡 提示問題</button>
+      <button class="tab" data-tab="clues">線索 <span id="clueCount"></span></button>
     </div>
-    <div class="scroll" id="tabAsk"><ul class="qlist" id="qlist"></ul></div>
+    <div class="scroll" id="tabLog"></div>
+    <div class="scroll" id="tabHint" hidden>
+      <div class="hint-note">想不出要問什麼？點一題直接問。<br>用過提示，評分會少一顆星。</div>
+      <ul class="qlist" id="qlist"></ul>
+    </div>
     <div class="scroll" id="tabClues" hidden></div>
+    <form class="askbar" id="askForm" autocomplete="off">
+      <input id="askInput" maxlength="100" placeholder="輸入你的是非題…" enterkeyhint="send">
+      <button class="btn sand" id="askBtn" type="submit">問</button>
+    </form>
     <div class="actionbar">
-      <button class="btn ghost" id="hintBtn">💡提示</button>
       <button class="btn sand" id="guessBtn">🍲 我知道了</button>
       <button class="btn coral" id="giveupBtn">🏳 放棄</button>
     </div>
@@ -329,6 +356,13 @@ button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
 <div id="toast"></div>
 
 <script>
+/* =========================================================
+   AI 設定：架好 Cloudflare Worker 後，把網址貼在下面的引號裡
+   例如 "https://turtle-soup-ai.你的帳號.workers.dev"
+   留空 = 只用關鍵字比對（不需要任何設定也能玩）
+   ========================================================= */
+const AI_ENDPOINT = "";
+
 /* =========================================================
    題庫：每碗湯 = 湯面 + 湯底 + 問題(是y/不是n/不重要i) + 四選一
    key:true 的問題答出來會變成線索；clue 是寫進筆記的文字
@@ -566,7 +600,7 @@ const store = {
   clear(){ try{ Object.keys(localStorage).filter(k=>k.startsWith("tsoup_")).forEach(k=>localStorage.removeItem(k)); }catch(e){} }
 };
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
-const ANS = {y:"是",n:"不是",i:"不重要",p:"接近了"};
+const ANS = {y:"是",n:"不是",i:"不重要",b:"是也不是",p:"接近了"};
 const stars = (n,max=3) => "★".repeat(n)+"☆".repeat(max-n);
 
 /* ---------- 8-bit sound ---------- */
@@ -695,43 +729,149 @@ function renderSelect(){
 
 /* ---------- solo game ---------- */
 let G = null;
+let aiDown = false;                       // AI 這次連線失敗太多次就先改用關鍵字
+const aiOn = () => !!AI_ENDPOINT && !aiDown;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
 function startGame(p){
-  G = { p, order: shuffle(p.questions.map((_,i)=>i)), asked:[], lives:3, hints:0, wrong:0, done:false };
+  G = { p, order: shuffle(p.questions.map((_,i)=>i)), asked:[], log:[], lives:3, hints:0, wrong:0, done:false, busy:false };
   $("#gTitle").textContent = p.title;
   $("#gSurface").textContent = p.surface;
   $("#surfacePanel").classList.remove("collapsed");
   $("#toggleSurface").textContent = "▲ 收起湯面";
-  switchTab("ask");
+  $("#askInput").value = "";
+  switchTab("log");
   go("game");
   renderGame();
 }
+const answered = () => G.log.filter(e => "ynib".includes(e.a || "x")).length;
+
 function renderGame(){
   const p=G.p;
   $("#hearts").innerHTML = "♥".repeat(G.lives)+`<span class="lost">${"♥".repeat(3-G.lives)}</span>`;
-  $("#qCount").textContent = `已問 ${G.asked.length} / ${p.questions.length} 題`;
+  $("#qCount").textContent = `已問 ${answered()} 題`;
+  const mb = $("#modeBadge"); mb.textContent = aiOn() ? "🤖 AI" : "🔤 關鍵字"; mb.classList.toggle("ai", aiOn());
+  // 提問紀錄（新的在上面）
+  $("#tabLog").innerHTML = G.log.length ? G.log.slice().reverse().map(e=>{
+    if(e.pending) return `<div class="log-item pending"><div class="lq">${esc(e.q)}</div><span class="ans">思考中</span></div>`;
+    if(e.miss) return `<div class="log-item miss"><div class="lq">${esc(e.q)}<span class="src">${e.miss}</span></div></div>`;
+    const src = e.src==="hint" ? "💡 提示問題" : e.src==="ai" ? "🤖 AI 判斷" : "🔤 關鍵字比對";
+    return `<div class="log-item"><div class="lq">${esc(e.q)}<span class="src">${src}</span></div><span class="ans ${e.a}">${ANS[e.a]}</span></div>`;
+  }).join("") : `<div class="empty">在下面輸入你的第一個問題吧！<br>問題要能用「是」或「不是」回答。<br><br>想不出來？看看「💡 提示問題」。</div>`;
+  // 提示問題
   $("#qlist").innerHTML = G.order.map(i=>{
     const [q,a,key]=p.questions[i]; const asked=G.asked.includes(i);
-    return `<li><button class="q ${asked?"asked":""} ${key?"key":""}" data-qi="${i}" ${asked?"aria-disabled='true'":""}>
+    return `<li><button class="q ${asked?"asked":""} ${key?"key":""}" data-qi="${i}">
       <span class="qmark">?</span><span class="qt">${q}</span>${asked?`<span class="ans ${a}">${ANS[a]}</span>`:""}</button></li>`;
   }).join("");
-  $$("#qlist .q").forEach(b=>b.onclick=()=>ask(+b.dataset.qi));
+  $$("#qlist .q").forEach(b=>b.onclick=()=>askPreset(+b.dataset.qi));
+  // 線索
   const clues = G.asked.filter(i=>p.questions[i][2]).map(i=>p.questions[i][3]);
   $("#clueCount").textContent = clues.length?`(${clues.length})`:"";
   $("#tabClues").innerHTML = clues.length
     ? clues.map((c,n)=>`<div class="clue">★ ${String(n+1).padStart(2,"0")}　${c}</div>`).join("")
-    : `<div class="empty">還沒有線索。<br>問到關鍵問題時，線索會自動記在這裡。</div>`;
+    : `<div class="empty">還沒有線索。<br>問到關鍵的事，線索會自動記在這裡。</div>`;
+  $("#askBtn").disabled = G.busy || G.done;
 }
-function ask(i, viaHint){
-  if(G.done) return;
-  if(G.asked.includes(i)){ toast("這題問過了"); return; }
+
+/* 把某個提示問題標記為「已問到」，如果是關鍵問題就解鎖線索 */
+function markPreset(i){
+  if(G.asked.includes(i)) return;
   G.asked.push(i);
-  const [,a,key]=G.p.questions[i];
-  stamp(a);
-  if(key) setTimeout(()=>{ SFX.clue(); toast(viaHint?"💡 提示："+G.p.questions[i][3]:"★ 發現線索！"); },500);
-  renderGame();
-  // move asked item feedback: keep scroll; collapse surface after first ask for space
-  if(G.asked.length===1) collapseSurface(true);
+  if(G.p.questions[i][2]) setTimeout(()=>{ SFX.clue(); toast("★ 發現線索："+G.p.questions[i][3]); },550);
 }
+function afterAnswer(a){
+  stamp(a);
+  if(answered()===1) collapseSurface(true);
+  switchTab("log");
+  renderGame();
+}
+
+/* 點提示問題 */
+function askPreset(i){
+  if(G.done || G.busy) return;
+  if(G.asked.includes(i)){ toast("這題問過了"); return; }
+  const [q,a]=G.p.questions[i];
+  G.hints++;
+  G.log.push({q, a, src:"hint"});
+  markPreset(i);
+  afterAnswer(a);
+}
+
+/* ---- 關鍵字比對：把問題去掉虛字後，用兩字一組的重疊程度找最像的提示問題 ---- */
+const STOP = /[他她它們的了是不嗎有在這那會個就都很也還要被把跟和與呢吧啊嘛喔哦得著過嗎請問所以那麼是否]/g;
+const PUNC = /[\s，。、？！?!.,~～「」『』()（）:：;；"'…\-]/g;
+function clean(s){ return s.replace(PUNC,"").replace(STOP,""); }
+function grams(s){ const a=[...s]; if(a.length<2) return new Set(a); const r=new Set(); for(let i=0;i<a.length-1;i++) r.add(a[i]+a[i+1]); return r; }
+function similarity(x,y){
+  const cx=clean(x), cy=clean(y);
+  const A=grams(cx), B=grams(cy); if(!A.size||!B.size) return 0;
+  let n=0; A.forEach(g=>{ if(B.has(g)) n++; });
+  const dice = 2*n/(A.size+B.size);          // 兩句整體有多像
+  const cover = 0.85*n/A.size;                // 玩家的詞有多少出現在提示問題裡
+  const chars=[...new Set(cx)];
+  const charCover = chars.length>=3 ? 0.7*chars.filter(c=>cy.includes(c)).length/chars.length : 0;
+  return Math.max(dice, cover, charCover);
+}
+function bestMatch(q){
+  let best=-1, score=0;
+  G.p.questions.forEach((x,i)=>{ const s=similarity(q,x[0]); if(s>score){score=s;best=i;} });
+  return {i:best, score};
+}
+const MATCH_OK = 0.5;
+
+/* ---- 呼叫 Cloudflare Worker ---- */
+async function askAI(q){
+  const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(), 15000);
+  try{
+    const r = await fetch(AI_ENDPOINT, {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({surface:G.p.surface, bottom:G.p.bottom, question:q}), signal:ctrl.signal});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok){ const e=new Error(d.error||String(r.status)); e.code=d.error||r.status; throw e; }
+    if(!["y","n","i","b","x"].includes(d.answer)) throw new Error("bad_answer");
+    return d.answer;
+  } finally { clearTimeout(t); }
+}
+
+async function submitAsk(raw){
+  if(G.done || G.busy) return;
+  const q = raw.trim().replace(/\s+/g," ");
+  if([...clean(q)].length < 1 || q.length < 2){ toast("問題太短了，多打幾個字吧"); return; }
+  $("#askInput").value = "";
+  const m = bestMatch(q);
+
+  if(aiOn()){
+    const entry = {q, pending:true};
+    G.log.push(entry); G.busy = true; switchTab("log"); renderGame();
+    try{
+      const a = await askAI(q);
+      entry.pending = false; G.busy = false;
+      if(a === "x"){ entry.miss = "這題沒辦法用「是 / 不是」回答，換個問法吧"; SFX.i(); renderGame(); return; }
+      entry.a = a; entry.src = "ai";
+      if(m.score >= MATCH_OK && G.p.questions[m.i][1] === a) markPreset(m.i);
+      afterAnswer(a);
+      return;
+    }catch(err){
+      G.log.pop(); G.busy = false;
+      const code = err.code;
+      if(code === "quota"){ aiDown = true; toast("今天的 AI 額度用完了，先改用關鍵字判斷"); }
+      else if(code === "rate"){ toast("問太快了，AI 休息一下，這題先用關鍵字判斷"); }
+      else { aiDown = true; toast("AI 暫時連不上，先改用關鍵字判斷"); }
+    }
+  }
+  // 關鍵字模式
+  if(m.score >= MATCH_OK){
+    const a = G.p.questions[m.i][1];
+    G.log.push({q, a, src:"kw"});
+    markPreset(m.i);
+    afterAnswer(a);
+  } else {
+    G.log.push({q, miss:"🤔 聽不太懂這題，換個問法，或看看「💡 提示問題」"});
+    SFX.i(); switchTab("log"); renderGame();
+  }
+}
+$("#askForm").addEventListener("submit", e=>{ e.preventDefault(); submitAsk($("#askInput").value); });
+
 function collapseSurface(c){
   $("#surfacePanel").classList.toggle("collapsed",c);
   $("#toggleSurface").textContent = c ? "▼ 展開湯面" : "▲ 收起湯面";
@@ -739,19 +879,9 @@ function collapseSurface(c){
 $("#toggleSurface").onclick=()=>{ SFX.tap(); collapseSurface(!$("#surfacePanel").classList.contains("collapsed")); };
 function switchTab(t){
   $$(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
-  $("#tabAsk").hidden = t!=="ask"; $("#tabClues").hidden = t!=="clues";
+  $("#tabLog").hidden = t!=="log"; $("#tabHint").hidden = t!=="hint"; $("#tabClues").hidden = t!=="clues";
 }
 $$(".tab").forEach(b=>b.onclick=()=>{SFX.tap();switchTab(b.dataset.tab);});
-
-$("#hintBtn").onclick=()=>{
-  if(G.done) return;
-  const left = G.order.filter(i=>G.p.questions[i][2] && !G.asked.includes(i));
-  if(!left.length){ toast("線索都找齊了，試著猜猜看吧！"); return; }
-  SFX.tap();
-  confirmBox("💡 使用提示？","系統會幫你問一個關鍵問題。<br><span class='muted tiny'>使用提示，評分會少一顆星。</span>","給我提示",()=>{
-    G.hints++; ask(left[Math.floor(Math.random()*left.length)], true);
-  });
-};
 $("#guessBtn").onclick=()=>{
   if(G.done) return;
   SFX.tap();
@@ -786,8 +916,8 @@ function finish(win, why){
   let s=0, notes=[];
   if(win){
     s=3;
-    if(G.asked.length > Math.ceil(p.questions.length/2)){ s--; notes.push("提問超過一半 -1"); }
-    if(G.hints>0){ s--; notes.push("使用提示 -1"); }
+    if(answered() > p.questions.length){ s--; notes.push("提問太多 -1"); }
+    if(G.hints>0){ s--; notes.push("用過提示 -1"); }
     if(G.wrong>0){ s--; notes.push("猜錯過 -1"); }
     s=Math.max(1,s);
     const best=store.get("best",{}); if(!best[p.id]||best[p.id]<s){ best[p.id]=s; store.set("best",best); }
@@ -796,7 +926,7 @@ function finish(win, why){
   const idx = PUZZLES.indexOf(p), next = PUZZLES[idx+1];
   openModal(`<h2>${win?"🎉 答對了！":"💀 "+why}</h2>
     ${win?`<div class="bigstars">${"★".repeat(s)}<span class="off">${"★".repeat(3-s)}</span></div>
-      <div class="scoreline">提問 ${G.asked.length} 題 · 提示 ${G.hints} 次 · 猜錯 ${G.wrong} 次</div>
+      <div class="scoreline">提問 ${answered()} 題 · 提示 ${G.hints} 次 · 猜錯 ${G.wrong} 次</div>
       ${notes.length?`<div class="scoreline">${notes.join("　")}</div>`:`<div class="scoreline" style="color:var(--sand)">完美破解！</div>`}`
       :`<div class="scoreline">別灰心，看看湯底吧</div>`}
     <div class="bottom-text"><span style="color:var(--coral)">【湯底】</span><br>${p.bottom}</div>
@@ -844,7 +974,7 @@ $("#announceBtn").onclick=()=>{
 $("#hostRestart").onclick=()=>{ SFX.tap(); confirmBox("↻ 重新開始？","提問次數會歸零。","重新開始",()=>{ startHost(H.p); toast("計數已歸零"); }); };
 
 /* ---------- init ---------- */
-$("#foot").textContent = `共 ${PUZZLES.length} 碗湯 · v1.0`;
+$("#foot").textContent = `共 ${PUZZLES.length} 碗湯 · v2.0`;
 renderTitle();
 </script>
 </body>
